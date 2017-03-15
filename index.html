@@ -1,3 +1,226 @@
+<!DOCTYPE html>
 <h1>Welcome to Elias Villiger's Website</h1>
+<html>
+<head>
+  <title>The Bomb Squad</title>
+<style>
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
 
-This is a cool page.
+var myGamePiece;
+var myBombs = [];
+var myPath = [];
+var myScore;
+var mouseX=0, mouseY=0;
+var speedX = 0, speedY = 0;
+var centerX, centerY;
+
+function startGame() {
+    myScore = new text("30px", "Consolas", "black", 280, 40);
+    myGameArea.start();
+    myGamePiece = new circle(20, "blue", centerX, centerY);
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 1200;
+        this.canvas.height = 540;
+		centerX = this.canvas.width / 2;
+		centerY = this.canvas.height / 2;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+		this.frameNo = 0;
+		this.canvas.addEventListener('mousemove', function(evt) {
+			var mousePos = getMousePos(evt);
+			mouseX = mousePos.x;
+			mouseY = mousePos.y;
+			}, false);
+        this.interval = setInterval(updateGameArea, 20);
+        },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+	updateSpeed : function() {
+		var maxSpeed = 6;
+		var cutoffMax = 170; // end of the speed gradient
+		var xDiff = centerX - mouseX;
+		var yDiff = centerY - mouseY;
+		
+		speedX = calcSpeed(centerX - mouseX, speedX);
+		speedY = calcSpeed(centerY - mouseY, speedY);
+		
+		mouseDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		if (mouseDist < cutoffMax) maxSpeed *= mouseDist / cutoffMax;
+		
+		if (Math.sqrt(speedX*speedX + speedY*speedY) > maxSpeed) {
+			if (xDiff == 0) {
+				speedY = maxSpeed * yDiff / Math.abs(yDiff);
+			} else {
+				var k = yDiff / xDiff;
+				speedX = Math.sqrt(maxSpeed*maxSpeed / (1 + k*k) ) * xDiff / Math.abs(xDiff);
+				speedY = k * speedX;
+			}
+		}
+	}
+}
+
+function calcSpeed (mouseDiff, speed) {
+	var acceleration = 0.2;
+	var slowing = 0.2;
+	var cutoffMovement = 20;
+	var newSpeed = speed;
+	if (Math.abs(mouseDiff) > cutoffMovement) {
+		newSpeed += mouseDiff < 0 ? -acceleration : acceleration;
+	} else {
+		if (newSpeed < 0) {
+			newSpeed += slowing;
+			if (newSpeed > 0) { newSpeed = 0; }
+		} else if (newSpeed > 0) {
+			newSpeed -= slowing;
+			if (newSpeed < 0) { newSpeed = 0; }
+		}
+	}
+	return newSpeed;
+}
+
+function getMousePos (evt) {
+	var rect = myGameArea.canvas.getBoundingClientRect();
+	return {
+		x: evt.clientX - rect.left,
+		y: evt.clientY - rect.top
+	};
+}
+
+function text(size, font, color, x, y) {
+	this.size = size;
+	this.font = font;
+	this.color = color;
+	this.x = x;
+	this.y = y;
+	
+    this.update = function() {
+        ctx = myGameArea.context;
+	  
+		ctx.font = this.size + " " + this.font;
+		ctx.fillStyle = color;
+		ctx.fillText(this.text, this.x, this.y);
+	}
+}
+
+function circle(radius, color, x, y, leadToCrash, life) {
+    this.score = 0;
+	this.life = life;
+    this.radius = radius;
+    this.x = x;
+    this.y = y;
+	this.color = color;
+	this.leadToCrash = leadToCrash;
+	
+	this.move = function() {
+		this.x += speedX;
+		this.y += speedY;
+		if (this.x < this.radius) {
+			this.x = myGameArea.canvas.width - this.radius;
+		} else if (this.x > myGameArea.canvas.width - this.radius) {
+			this.x = this.radius;
+		}
+		if (this.y < this.radius) {
+			this.y = myGameArea.canvas.height - this.radius;
+		} else if (this.y > myGameArea.canvas.height - this.radius) {
+			this.y = this.radius;
+		}
+	}
+	
+    this.update = function() {
+        ctx = myGameArea.context;
+	  
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+		ctx.fillStyle = this.color;
+		ctx.fill();
+    }
+    this.crashWith = function(other) {
+		var xDiff = this.x - other.x;
+		var yDiff = this.y - other.y;
+		var distance = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+        return (distance <= this.radius + other.radius);
+    }
+}
+
+function updateGameArea() {
+	// pick up bombs
+    for (var i = 0; i < myBombs.length; i++) {
+        if (myGamePiece.crashWith(myBombs[i])) {
+            myGameArea.frameNo += 1000;
+			myBombs.splice(i,1); //get rid of circle
+        }
+    }
+	// crash into path
+	for (var i = 0; i < myPath.length; i++) {
+		if (myGamePiece.crashWith(myPath[i])) {
+			if (myPath[i].leadToCrash == true) {
+				// Game Over
+				clearInterval(myGameArea.interval);
+			}
+		} else {
+			if (myPath[i].leadToCrash == false) {
+				myPath[i].leadToCrash = true;
+			}
+		}
+	}
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+    if (myGameArea.frameNo < 10 || everyinterval(250)) { // Generate bombs
+		var radius = 10;
+		var color = "#FF9999";
+		var x = randomNum(radius, myGameArea.canvas.width - radius);
+		var y = randomNum(radius, myGameArea.canvas.height - radius);
+        myBombs.push(new circle(radius, color, x, y, true, 1000));
+    }
+	myGameArea.updateSpeed();
+    for (var i = 0; i < myBombs.length; i++) {
+        myBombs[i].move();
+        myBombs[i].update();
+		myBombs[i].life--;
+		myBombs[i].color = "#FF" + Math.floor(myBombs[i].life/10) + Math.floor(myBombs[i].life/10);
+		if (myBombs[i].life < 100) myBombs[i].color = "red";
+		if (myBombs[i].life <= 0) {
+			myBombs[i].radius = 50;
+			myPath.push(myBombs[i]);
+			myBombs.splice(i,1);
+			myGameArea.frameNo -= 500;
+			myPath[myPath.length-1].color = 'black';
+		}
+    }
+	
+	myPath.push(new circle(10, "blue", centerX, centerY, false));
+    for (var i = 0; i < myPath.length; i++) {
+        myPath[i].move();
+        myPath[i].update();
+    }
+	
+    myScore.text="SCORE: " + myGameArea.frameNo;
+    myScore.update();
+	myGamePiece.update();
+}
+
+function randomNum(min, max) {
+	return Math.floor(Math.random() * (max-min+1) + min);
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+</script>
+<br>
+Catch the bombs before they explode. Don't step in the same place twice. Haven Sie fun!
+</body>
+</html>
