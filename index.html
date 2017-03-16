@@ -174,11 +174,11 @@ function circle(radius, color, x, y, leadToCrash, life, type) {
 			drawCircle(this.x, this.y-myGameArea.canvas.height, this.radius, this.color);
 		}
     }
-    this.crashWith = function(other) {
+    this.crashWith = function(other, additionalDistance=0) {
 		var xDiff = this.x - other.x;
 		var yDiff = this.y - other.y;
 		var distance = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-        return (distance <= this.radius + other.radius);
+        return (distance <= this.radius + other.radius + additionalDistance);
     }
 }
 
@@ -209,7 +209,7 @@ function updateGameArea() {
 				gameOver();
 			}
 		} else {
-			if (myPath[i].leadToCrash == false) {
+			if (myPath[i].leadToCrash == false && !myGamePiece.crashWith(myPath[i], 20)) {
 				myPath[i].leadToCrash = true;
 			}
 		}
