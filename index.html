@@ -11,7 +11,7 @@
 <style>
 canvas {
     border:1px solid #d3d3d3;
-    background-color: #f1f1f1;
+    background-color: #8da;
 }
 </style>
 </head>
@@ -217,14 +217,14 @@ function updateGameArea() {
     myGameArea.clear();
     myGameArea.frameNo++;
 	myGameArea.myScore++;
-    if (myGameArea.frameNo < 10 || everyinterval(200)) { // Generate bombs
+    if (myGameArea.frameNo < 12 || everyinterval(160)) { // Generate bombs
 		var radius = 10;
 		var color = "#FF9999";
 		var newBomb, emptySpot, count = 0;
 		do { // make sure it is visible where it is placed
 			var x = randomNum(radius, myGameArea.canvas.width - radius);
 			var y = randomNum(radius, myGameArea.canvas.height - radius);
-			newBomb = new circle(radius, color, x, y, false, 1000, 'bomb');
+			newBomb = new circle(radius, color, x, y, false, 800, 'bomb');
 			emptySpot = true;
 			for (var i = 0; i < myBombs.length; ++i) {
 				if (myBombs[i].crashWith(newBomb)) {
