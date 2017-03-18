@@ -56,11 +56,12 @@ var myGameArea = {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
 	updateSpeed : function() {
-		var maxSpeed = 8;
+		var maxSpeed = 8, mouseDist = 0;
 		var xDiff = centerX - mouseX;
 		var yDiff = centerY - mouseY;
 		
-		var mouseDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		if (xDiff != 0 && yDiff != 0)
+			mouseDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
 		if (mouseDist < cutoffMax) maxSpeed *= (mouseDist-cutoffMovement) / (cutoffMax-cutoffMovement);
 		if (mouseDist < cutoffMovement) maxSpeed = 0;
 		
