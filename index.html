@@ -60,18 +60,21 @@ var myGameArea = {
 		var xDiff = centerX - mouseX;
 		var yDiff = centerY - mouseY;
 		
-		if (xDiff != 0 && yDiff != 0)
+		if (xDiff != 0 || yDiff != 0)
 			mouseDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
 		if (mouseDist < cutoffMax) maxSpeed *= (mouseDist-cutoffMovement) / (cutoffMax-cutoffMovement);
-		if (mouseDist < cutoffMovement) maxSpeed = 0;
-		
-		// need to ensure correct relation of x to y to move into the right direction
-		if (xDiff == 0) {
-			speedY = maxSpeed * yDiff / Math.abs(yDiff);
+		if (mouseDist < cutoffMovement) {
+			speedX = 0;
+			speedY = 0;
 		} else {
-			var k = yDiff / xDiff;
-			speedX = Math.sqrt(maxSpeed*maxSpeed / (1 + k*k) ) * xDiff / Math.abs(xDiff);
-			speedY = k * speedX;
+			// need to ensure correct relation of x to y to move into the right direction
+			if (xDiff == 0) {
+				speedY = maxSpeed * yDiff / Math.abs(yDiff);
+			} else {
+				var k = yDiff / xDiff;
+				speedX = Math.sqrt(maxSpeed*maxSpeed / (1 + k*k) ) * xDiff / Math.abs(xDiff);
+				speedY = k * speedX;
+			}
 		}
 	}
 }
