@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <!-- Ideen: 
    - Powerups
-   - Rückwärts verbessern
-   - Kein Tod bei Explosion / Pfad-Rennen (score halbieren?)
-   - Game Over text
-   - Statistics of score changes
 -->
 <html>
 <head>
@@ -19,20 +15,23 @@ canvas {
 <script>
 
 var myGamePiece;
-var playerRadius = 20;
+var myStartRadius = 20;
 var myBombs = [];
 var myPath = [];
+var myScores = [];
+var maxScore = 0;
 var scoreText;
 var mouseX=0, mouseY=0;
 var speedX = 0, speedY = 0;
 var centerX, centerY;
 var cutoffMovement = 20; // beginning of speed gradient
 var cutoffMax = 170; // end of the speed gradient
+var gameOverIteration = 0;
 
 function startGame() {
     scoreText = new text("30px", "Consolas", "black", 280, 40);
     myGameArea.start();
-    myGamePiece = new circle(playerRadius, "blue", centerX, centerY);
+    myGamePiece = new circle(myStartRadius, "blue", centerX, centerY);
 }
 
 var myGameArea = {
@@ -51,54 +50,29 @@ var myGameArea = {
 			mouseX = mousePos.x;
 			mouseY = mousePos.y;
 			}, false);
-        this.interval = setInterval(updateGameArea, 20);
+        this.interval = setInterval(updateGameArea, 22);
         },
     clear : function() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
 	updateSpeed : function() {
-		var maxSpeed = 7;
+		var maxSpeed = 8;
 		var xDiff = centerX - mouseX;
 		var yDiff = centerY - mouseY;
 		
-		speedX = calcSpeed(centerX - mouseX, speedX);
-		speedY = calcSpeed(centerY - mouseY, speedY);
-		
-		mouseDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		var mouseDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
 		if (mouseDist < cutoffMax) maxSpeed *= (mouseDist-cutoffMovement) / (cutoffMax-cutoffMovement);
 		if (mouseDist < cutoffMovement) maxSpeed = 0;
 		
-		if (Math.sqrt(speedX*speedX + speedY*speedY) > maxSpeed) {
-			// maximum speed
-			// need to ensure correct relation of x to y to move into the right direction
-			if (xDiff == 0) {
-				speedY = maxSpeed * yDiff / Math.abs(yDiff);
-			} else {
-				var k = yDiff / xDiff;
-				speedX = Math.sqrt(maxSpeed*maxSpeed / (1 + k*k) ) * xDiff / Math.abs(xDiff);
-				speedY = k * speedX;
-			}
+		// need to ensure correct relation of x to y to move into the right direction
+		if (xDiff == 0) {
+			speedY = maxSpeed * yDiff / Math.abs(yDiff);
+		} else {
+			var k = yDiff / xDiff;
+			speedX = Math.sqrt(maxSpeed*maxSpeed / (1 + k*k) ) * xDiff / Math.abs(xDiff);
+			speedY = k * speedX;
 		}
 	}
-}
-
-function calcSpeed (mouseDiff, speed) {
-	var acceleration = 0.2;
-	var slowing = 0.2;
-	var newSpeed = speed;
-	if (Math.abs(mouseDiff) > cutoffMovement) {
-		newSpeed += mouseDiff < 0 ? -acceleration : acceleration;
-	} else { // slow down to stop
-
-		if (newSpeed < 0) {
-			newSpeed += slowing;
-			if (newSpeed > 0) { newSpeed = 0; }
-		} else if (newSpeed > 0) {
-			newSpeed -= slowing;
-			if (newSpeed < 0) { newSpeed = 0; }
-		}
-	}
-	return newSpeed;
 }
 
 function getMousePos (evt) {
@@ -192,24 +166,31 @@ function drawCircle(x, y, radius, color) {
 
 function updateGameArea() {
 	// pick up bombs / crash into bombs
+	var isGameOver = false;
     for (var i = 0; i < myBombs.length; i++) {
         if (myGamePiece.crashWith(myBombs[i])) {
 			if (myBombs[i].leadToCrash == true) {
-				gameOver();
+				isGameOver = true;
 			} else {
 				myGameArea.myScore += 1000;
 				myBombs.splice(i,1); //get rid of circle
+				--i; // rewind to catch the next bomb
 			}
         }
     }
 	// crash into path
-	for (var i = 0; i < myPath.length; i++) {
+	for (var i = myPath.length - 1; i >= 0; i--) {
 		if (myGamePiece.crashWith(myPath[i])) {
 			if (myPath[i].leadToCrash == true) {
-				gameOver();
+				// divide score based on how far from the end the path circle was
+				myGameArea.myScore -= 250;
+				myGameArea.myScore = Math.round(myGameArea.myScore * 1.0 * (myPath.length - i) / myPath.length);
+				// get rid of all myPath circles before the current one
+				myPath.splice(0, i+1);
+				break;
 			}
 		} else {
-			if (myPath[i].leadToCrash == false && !myGamePiece.crashWith(myPath[i], 20)) {
+			if (myPath[i].leadToCrash == false && !myGamePiece.crashWith(myPath[i], myGamePiece.radius*1.5)) {
 				myPath[i].leadToCrash = true;
 			}
 		}
@@ -240,18 +221,18 @@ function updateGameArea() {
 			}
 			++count;
 		} while (emptySpot == false && count < 100)
-		if (count >= 100) gameOver();
+		if (count >= 100) isGameOver = true;
         myBombs.push(newBomb);
     }
 	myGameArea.updateSpeed();
     for (var i = 0; i < myBombs.length; i++) {
 		myBombs[i].life--;
-		if (myBombs[i].life <= 0 && myBombs[i].radius < 50) {
+		if (myBombs[i].life <= 0 && myBombs[i].radius < 75) {
 			myBombs[i].radius++;
-			if (myBombs[i].radius > playerRadius) {
+			if (myBombs[i].radius > myGamePiece.radius) {
+				if (!myBombs[i].leadToCrash) myGameArea.myScore -= 500;
 				myBombs[i].leadToCrash = true;
-				if (myBombs[i].radius >= 50) {
-					myGameArea.myScore -= 500;
+				if (myBombs[i].radius >= 75) {
 				}
 			}
 		}
@@ -264,7 +245,7 @@ function updateGameArea() {
     }
 	
 	// Update my path
-	myPath.push(new circle(10, "#000000FF", centerX, centerY, false, 1700, 'path'));
+	myPath.push(new circle(myGamePiece.radius / 2, "#000000FF", centerX, centerY, false, randomNum(850, 1700), 'path'));
     for (var i = 0; i < myPath.length; i++) {
 		myPath[i].life--;
 		if (myPath[i].life <= 0) {
@@ -277,20 +258,70 @@ function updateGameArea() {
         myPath[i].update();
     }
 	
+	if (myGameArea.myScore < 0) myGameArea.myScore = 0;
+	if (myGameArea.myScore > maxScore) maxScore = myGameArea.myScore;
     scoreText.text="SCORE: " + myGameArea.myScore;
     scoreText.update();
+	myScores.push(myGameArea.myScore);
+	
+	myGamePiece.radius = myStartRadius + myGameArea.myScore/10000;
 	myGamePiece.update();
+	
+	if (isGameOver) gameOver();
 }
 
 function gameOver() {
-	// Game Over
+	++gameOverIteration;
+	var ctx = myGameArea.context;
+	
 	clearInterval(myGameArea.interval);
-	
-    myGameArea.clear();
-    var gameOverText = new text("40 px", "Consolas", "black", centerX, centerY);
-	gameOverText.text="Game Over!"
-    gameOverText.update();
-	
+	if(gameOverIteration < 25) {
+		ctx.globalAlpha = 0.02;
+		ctx.fillStyle="white";
+		ctx.fillRect(0, 0, myGameArea.canvas.width, myGameArea.canvas.height);
+		ctx.globalAlpha = 1.0;
+		myGameArea.interval = setInterval(gameOver, 20);
+	} else {
+		if (gameOverIteration < 125) { // Draw statistics in 100 iterations
+			myGameArea.interval = setInterval(gameOver, 20);
+		
+			var initX = 10, initY = myGameArea.canvas.height-10,
+				endX = myGameArea.canvas.width-5, endY = 5;
+			var scaleX = (endX-initX)/myScores.length, scaleY = 1;
+			if ((initY-endY) < maxScore/100) scaleY = (initY-endY)/maxScore*100;
+			
+			// slice for loop into 100 equal parts
+			var span = myScores.length-1;
+			var start = Math.round(1 + (gameOverIteration-25)*span/100);
+			var end = Math.round(1 + (gameOverIteration-25 + 1)*span/100);
+			for (var i = start; i < end; i++) {
+				var startX = (initX+i-1)*scaleX, startY = initY - myScores[i-1]/100*scaleY;
+				var newX = (initX+i)*scaleX, newY = initY - myScores[i]/100*scaleY;
+				drawLine(startX, startY, newX, newY, 10, "#A50", "round");
+			}
+		}
+		
+		if (gameOverIteration == 25 || gameOverIteration == 100) {
+			var gameOverText = new text("40px", "Consolas", "black", centerX-100, centerY-22);
+			gameOverText.text="Game Over!";
+			gameOverText.update();
+			
+			var maxScoreText = new text("20px", "Consolas", "black", centerX-80-(maxScore.toString().length)*4, centerY+12);
+			maxScoreText.text="Highest Score: " + maxScore;
+			maxScoreText.update();
+		}
+	}
+}
+
+function drawLine(x1,y1,x2,y2,width,color,lineCap) {
+	var ctx = myGameArea.context;
+	ctx.beginPath();
+	ctx.lineCap = lineCap;
+	ctx.moveTo(x1, y1);
+	ctx.lineTo(x2, y2);
+	ctx.strokeStyle = color;
+	ctx.lineWidth = width;
+	ctx.stroke();
 }
 
 function randomNum(min, max) {
