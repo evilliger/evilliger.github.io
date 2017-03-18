@@ -29,7 +29,7 @@ var cutoffMax = 170; // end of the speed gradient
 var gameOverIteration = 0;
 
 function startGame() {
-    scoreText = new text("30px", "Consolas", "black", 280, 40);
+    scoreText = new text("20px", "Consolas", "black", 30,30);
     myGameArea.start();
     myGamePiece = new circle(myStartRadius, "blue", centerX, centerY);
 }
@@ -260,7 +260,7 @@ function updateGameArea() {
 	
 	if (myGameArea.myScore < 0) myGameArea.myScore = 0;
 	if (myGameArea.myScore > maxScore) maxScore = myGameArea.myScore;
-    scoreText.text="SCORE: " + myGameArea.myScore;
+    scoreText.text="Score: " + myGameArea.myScore;
     scoreText.update();
 	myScores.push(myGameArea.myScore);
 	
