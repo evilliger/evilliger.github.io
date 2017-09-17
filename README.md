@@ -1,2 +1,2 @@
-# evilliger.github.io
-Elias Villiger's Website
+# villiger.github.io
+Elias & Patti Villiger's Website
