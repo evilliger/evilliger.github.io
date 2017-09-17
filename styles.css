@@ -35,15 +35,15 @@ hr {
 	width: 40%; 
 	margin-bottom: 25px; 
 }
-#main-contents {
+#contents-main {
     background-color: white;
     padding: 30px 0px;
 }
+#contents-main > div {
+	margin: 25px 4%; 
+}
 .reference {
 	font-style: italic;
-}
-.contents {
-	margin: 25px 4%; 
 }
 .table-shades tr:nth-child(even) {
 	background-color: #e0f2ca
