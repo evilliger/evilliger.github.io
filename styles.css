@@ -10,10 +10,10 @@ table {
 }
 td {
 	border: solid 1px darkolivegreen; 
-	padding: 6px;
+	padding: 10px;
 }
 th { 
-	padding: 6px;
+	padding: 10px;
 	background-color: darkolivegreen;
 	border: solid 1px darkolivegreen;
 	text-align: center;
