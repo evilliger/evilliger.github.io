@@ -40,10 +40,16 @@ hr {
     padding: 30px 0px;
 }
 #contents-main > div {
-	margin: 25px 4%; 
+	margin: 25px 4%;
+}
+.verse {
+    font-size: 1.4em;
+    padding: 0px 10%;
 }
 .reference {
-	font-style: italic;
+    text-align: right;
+    color: #999;
+    padding: 0px 10%;
 }
 .table-shades tr:nth-child(even) {
 	background-color: #e0f2ca
